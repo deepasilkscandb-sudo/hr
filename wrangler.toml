@@ -1,0 +1,20 @@
+name = "hr-api"
+main = "worker/src/index.js"
+compatibility_date = "2025-09-01"
+workers_dev = true
+
+[vars]
+SETTINGS_SHEET_ID = "1x-3OFX6k5DmGOGZ_Ig5pmij3VO_uofD_vCa-UhUyyiQ"
+ALLOWED_ORIGINS = "https://deepasilkscandb-sudo.github.io"
+
+[[durable_objects.bindings]]
+name = "HUB"
+class_name = "Hub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Hub"]
+
+# Daily job at 02:00 India time (20:30 UTC): deletes files of rejected candidates after the retention period
+[triggers]
+crons = ["30 20 * * *"]

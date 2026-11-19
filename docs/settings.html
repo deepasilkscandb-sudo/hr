@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Settings</title><link rel="stylesheet" href="assets/app.css"></head>
+<body>
+<header class="top" id="top"></header>
+<main>
+  <div class="tabs" id="tabs">
+    <button data-t="company" class="on">Company</button>
+    <button data-t="ids">Employee ID</button>
+    <button data-t="stores">Stores</button>
+    <button data-t="users">Users</button>
+    <button data-t="files">Files</button>
+    <button data-t="form">Apply form</button>
+    <button data-t="lists">Lists</button>
+    <button data-t="modules">Modules</button>
+    <button data-t="languages">Languages</button>
+    <button data-t="me">My password</button>
+  </div>
+
+  <section id="t-company" class="card">
+    <h2>Company</h2><p class="sub">Basic details used across the app.</p>
+    <div class="grid">
+      <div><label>Company name</label><input id="CompanyName"></div>
+      <div><label>Probation period (days)</label><input id="ProbationDays" type="number" min="0"></div>
+      <div><label>Org structure</label><select id="SameStructureAllStores"><option value="Yes">Same for all stores</option><option value="No">Different per store</option></select></div>
+      <div><label>Store limit <span id="limHint" style="font-weight:400;color:var(--muted)"></span></label><input id="StoreLimit" type="number" min="1"></div>
+    </div>
+    <div class="row-end"><span class="msg" id="m-company"></span><button class="btn" data-save="company">Save</button></div>
+    <div id="logoBox" style="border-top:1px solid var(--line);margin-top:18px;padding-top:6px">
+      <label>Company logo <span class="hint">(shown in the menu, login page, apply form, letters and reports · PNG or JPG)</span></label>
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <div class="logo-pv"><img id="logoPv" alt="Company logo preview" class="hidden"><span id="logoNone" class="sub">No logo yet</span></div>
+        <input type="file" id="logoF" accept="image/png,image/jpeg" style="width:auto"><button type="button" id="logoX" class="danger">Remove logo</button>
+        <span class="msg" id="m-logo"></span>
+      </div>
+    </div>
+  </section>
+
+  <section id="dangerZone" class="card danger-zone hidden">
+    <h2>Start fresh</h2>
+    <p class="sub">Clears <b>all</b> data of this company: employees, candidates, KPIs, checklists, letters, uploaded documents (to the Drive trash), activity log, every login except the C&amp;B Super Admin, and all settings (they go back to the defaults). The spreadsheets themselves and the file-upload connection stay. <b>This cannot be undone.</b></p>
+    <div class="grid">
+      <div><label for="rsNew">New company name (optional)</label><input id="rsNew" placeholder="e.g. Sri Lakshmi Silks"></div>
+      <div><label for="rsConf" id="rsLab">Type the current company name to confirm</label><input id="rsConf" autocomplete="off"></div>
+    </div>
+    <div class="row-end"><span class="msg" id="m-rs"></span><button type="button" class="btn btn-err" id="rsGo">Clear all data</button></div>
+  </section>
+
+  <section id="t-ids" class="card hidden">
+    <h2>Employee ID format</h2><p class="sub">How new employee numbers are generated.</p>
+    <div class="grid">
+      <div><label>Prefix</label><input id="EmpIdPrefix" placeholder="EMP-"></div>
+      <div><label>Number of digits</label><input id="EmpIdDigits" type="number" min="2" max="8"></div>
+      <div><label>Next number</label><input id="EmpIdNextNumber" type="number" min="1"></div>
+      <div><label>Numbering</label><select id="EmpIdPerStore"><option value="No">Across whole company</option><option value="Yes">Separate per store (store code added)</option></select></div>
+    </div>
+    <div class="preview">Next ID will look like: <b id="idPrev" translate="no"></b></div>
+    <div class="row-end"><span class="msg" id="m-ids"></span><button class="btn" data-save="ids">Save</button></div>
+  </section>
+
+  <section id="t-stores" class="card hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><h2>Stores & locations</h2><p class="sub" id="storeCount"></p></div><button class="btn" id="addStore">+ Add location</button></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Code</th><th>Name</th><th>Type</th><th>City</th><th>Common structure</th><th>Active</th><th></th></tr></thead><tbody id="storeRows"></tbody></table></div>
+  </section>
+
+  <section id="t-users" class="card hidden">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><h2>Users</h2><p class="sub">People who can log in.</p></div><button class="btn" id="addUser">+ Add user</button></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Stores</th><th>Employee</th><th>Active</th><th></th></tr></thead><tbody id="userRows"></tbody></table></div>
+  </section>
+
+  <section id="t-files" class="card hidden">
+    <h2>File storage</h2>
+    <p class="sub">Files are saved in your Google Drive by a small upload script (Upload.gs). Set it up once — see the setup guide.</p>
+    <div id="stState" class="sub"></div>
+    <div class="grid">
+      <div style="grid-column:1/-1"><label>Upload script — Web app URL</label><input id="stUrl" placeholder="https://script.google.com/macros/s/…/exec"></div>
+      <div style="grid-column:1/-1"><label>Secret <span class="sub">(paste into SECRET in Upload.gs)</span></label>
+        <div style="display:flex;gap:6px"><input id="stSecret" readonly style="font-family:monospace"><button type="button" id="stCopy">Copy</button></div></div>
+      <div><label>Delete files of rejected candidates after (days)</label><input id="stDays" type="number" min="7" max="3650"></div>
+    </div>
+    <div class="row-end" style="flex-wrap:wrap"><span class="msg" id="m-st"></span>
+      <button type="button" id="stNew">New secret</button><button type="button" id="stClean">Run clean-up now</button><button type="button" id="stTest">Test connection</button><button class="btn" id="stSave">Save</button></div>
+
+    <h2 style="margin-top:24px">Document types</h2>
+    <p class="sub">The first three appear on the job application form — choose Mandatory, Optional or Hidden. Add any other documents you keep for employees.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Document</th><th>For</th><th>Application form</th><th>Active</th><th></th></tr></thead><tbody id="dtBody"></tbody></table></div>
+    <div class="row-end"><span class="msg" id="m-dt"></span><button type="button" id="dtAdd">+ Add document type</button><button class="btn" id="dtSave">Save document types</button></div>
+  </section>
+
+  <section id="t-form" class="card hidden">
+    <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;flex-wrap:wrap"><div><h2>Apply form questions</h2>
+      <p class="sub">Questions on the QR job application form and the HR walk-in form. Name, mobile and position are always mandatory. Use ↑ ↓ to change the order.</p></div>
+      <a class="btn2" href="apply.html" target="_blank" rel="noopener" style="text-decoration:none;padding:8px 12px;border:1px solid var(--line);border-radius:8px">Preview form ↗</a></div>
+    <div class="tbl-wrap"><table class="qtbl"><thead><tr><th style="width:60px"></th><th>Question</th><th>Section</th><th>Type</th><th>Options / hint</th><th>On the form</th><th></th></tr></thead><tbody id="fqBody"></tbody></table></div>
+    <datalist id="secList"></datalist>
+    <div class="row-end"><span class="msg" id="m-fq"></span><button type="button" id="fqAdd">+ Add question</button><button class="btn" id="fqSave">Save apply form</button></div>
+  </section>
+
+  <section id="t-lists" class="card hidden">
+    <h2>Dropdown lists</h2>
+    <p class="sub">One value per line. Every dropdown also has <b>Other…</b>, where people can type something not in the list — typed values are saved on the record but are not added here. Add a value here only when it is needed regularly.</p>
+    <div class="lists-grid" id="lsBody"></div>
+    <div class="row-end"><span class="msg" id="m-ls"></span><button class="btn" id="lsSave">Save lists</button></div>
+  </section>
+
+  <section id="t-modules" class="card hidden" style="max-width:760px">
+    <h2>Modules</h2>
+    <p class="sub">Switch parts of the app on or off for this client. Organisation and Employees are always on. Switching a module off hides it and blocks it on the server, but <b>never deletes its data</b> — switch it back on and everything returns.</p>
+    <div id="modList" class="mod-list"></div>
+    <div class="row-end"><span class="msg" id="m-mod"></span><button class="btn" id="modSave">Save modules</button></div>
+  </section>
+
+  <section id="t-languages" class="card hidden" style="max-width:760px">
+    <h2>Languages</h2>
+    <p class="sub">Switch on the languages users can choose. The screen is translated by Google Translate; <b>everything saved stays in English</b> — names, codes, amounts and dropdown values are never translated, letters always stay English, and typed text must be in English letters. With no language switched on, the app shows English only and no language button appears.</p>
+    <div id="langList" class="mod-list"></div>
+    <div class="row-end"><span class="msg" id="m-lang"></span><button class="btn" id="langSave">Save languages</button></div>
+  </section>
+
+  <section id="t-me" class="card hidden" style="max-width:420px">
+    <h2>Change my password</h2>
+    <label>Current password</label><input id="op" type="password">
+    <label>New password (min 8)</label><input id="np" type="password">
+    <div class="row-end"><span class="msg" id="m-me"></span><button class="btn" id="chg">Change</button></div>
+  </section>
+</main>
+
+<dialog id="dStore"><form method="dialog" id="fStore">
+  <h3 id="dStoreT">Location</h3>
+  <div class="grid">
+    <div><label>Code</label><input name="StoreCode" required></div>
+    <div><label>Name</label><input name="StoreName" required></div>
+    <div><label>Type</label><select name="Type"><option>Store</option><option>Warehouse</option><option>Head Office</option></select></div>
+    <div><label>City</label><input name="City"></div>
+    <div><label>Uses common structure</label><select name="UsesCommonStructure"><option>Yes</option><option>No</option></select></div>
+    <div><label>Active</label><select name="Active"><option>Yes</option><option>No</option></select></div>
+  </div>
+  <div class="row-end"><span class="msg" id="m-store"></span><button value="cancel" formnovalidate>Cancel</button><button class="btn" id="sStore">Save</button></div>
+</form></dialog>
+
+<dialog id="dUser"><form method="dialog" id="fUser">
+  <h3 id="dUserT">User</h3>
+  <div class="grid">
+    <div><label>Full name</label><input name="FullName" required></div>
+    <div><label>Username (email)</label><input name="Username" required></div>
+    <div><label>Role</label><select name="Role" id="roleSel"></select></div>
+    <div><label>Stores (codes, or ALL)</label><input name="StoreCodes" value="ALL"></div>
+    <div style="grid-column:1/-1"><label>Linked employee <span style="font-weight:400;color:var(--muted)">(needed for managers: their team = people reporting to this employee)</span></label><select name="EmpId" id="empSel"></select></div>
+    <div><label>Active</label><select name="Active"><option>Yes</option><option>No</option></select></div>
+    <div><label id="pwL">Password (min 8)</label><input name="Password" type="password"></div>
+  </div>
+  <div class="row-end"><span class="msg" id="m-user"></span><button value="cancel" formnovalidate>Cancel</button><button class="btn" id="sUser">Save</button></div>
+</form></dialog>
+
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+const S = guard(['SuperAdmin', 'Admin']);
+let DATA = null;
+renderTop('settings');
+const isSA = S && S.role === 'SuperAdmin';
+// Admin: Users + own password only. C&B Super Admin: everything (Files / Apply form only when their module is on)
+const TAB_OK = { company: isSA, ids: isSA, stores: isSA, users: true, files: isSA && hasMod('FILES'), form: isSA && hasMod('HIRING'), lists: isSA, modules: isSA, languages: isSA, me: true };
+document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('hidden', !TAB_OK[b.dataset.t]));
+if (isSA) $('#dangerZone').classList.remove('hidden'); else $('#logoBox').classList.add('hidden');
+if (S && !isSA) { document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x.dataset.t === 'users')); document.querySelectorAll('main > section').forEach(s => s.classList.toggle('hidden', s.id !== 't-users')); }
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('main > section').forEach(s => s.classList.toggle('hidden', s.id !== 't-' + b.dataset.t && !(s.id === 'dangerZone' && b.dataset.t === 'company' && isSA)));
+});
+
+async function load() {
+  DATA = await api('getSettings');
+  const c = DATA.company;
+  if (isSA) {
+    const cur = String(c.CompanyName || '').trim();
+    $('#rsLab').textContent = cur ? `Type "${cur}" to confirm` : 'Type RESET to confirm';
+    showLogo(c.BrandLogo || '');
+  }
+  ['CompanyName','ProbationDays','SameStructureAllStores','StoreLimit','EmpIdPrefix','EmpIdDigits','EmpIdNextNumber','EmpIdPerStore']
+    .forEach(k => { if ($('#' + k)) $('#' + k).value = c[k] ?? ''; });
+  setCompanyName(c.CompanyName);
+  const isSuper = S.role === 'SuperAdmin';
+  $('#StoreLimit').disabled = !isSuper;
+  $('#limHint').textContent = isSuper ? '' : '(set by Super Admin)';
+  idPreview(); renderStores(); renderUsers();
+}
+
+function idPreview() {
+  const n = String($('#EmpIdNextNumber').value || 1).padStart(Number($('#EmpIdDigits').value || 4), '0');
+  const storePart = $('#EmpIdPerStore').value === 'Yes' ? 'STR01-' : '';
+  $('#idPrev').textContent = ($('#EmpIdPrefix').value || '') + storePart + n;
+}
+['EmpIdPrefix','EmpIdDigits','EmpIdNextNumber','EmpIdPerStore'].forEach(k => $('#' + k).addEventListener('input', idPreview));
+
+document.querySelectorAll('[data-save]').forEach(b => b.onclick = async () => {
+  const which = b.dataset.save, m = $('#m-' + which);
+  const keys = which === 'company' ? ['CompanyName','ProbationDays','SameStructureAllStores','StoreLimit'] : ['EmpIdPrefix','EmpIdDigits','EmpIdNextNumber','EmpIdPerStore'];
+  const values = {}; keys.forEach(k => { if (!$('#' + k).disabled) values[k] = $('#' + k).value; });
+  b.disabled = true;
+  try { await api('saveCompany', { values }); showMsg(m, 'Saved', true); await load(); } catch (e) { showMsg(m, e.message); }
+  b.disabled = false;
+});
+
+const pill = v => `<span class="pill ${v === 'No' ? 'no' : 'yes'}">${esc(v || 'Yes')}</span>`;
+function renderStores() {
+  const st = DATA.stores, lim = DATA.company.StoreLimit;
+  const n = st.filter(s => s.Type === 'Store' && s.Active !== 'No').length;
+  $('#storeCount').textContent = `${n} of ${lim || '∞'} stores used (warehouses and offices don't count)`;
+  $('#storeRows').innerHTML = st.length ? st.map((s, i) => `<tr><td><b>${esc(s.StoreCode)}</b></td><td>${esc(s.StoreName)}</td><td>${esc(s.Type)}</td><td>${esc(s.City)}</td><td>${pill(s.UsesCommonStructure)}</td><td>${pill(s.Active)}</td><td><button data-es="${i}">Edit</button></td></tr>`).join('')
+    : '<tr><td colspan="7" style="color:var(--muted)">No locations yet. Add your first one.</td></tr>';
+  document.querySelectorAll('[data-es]').forEach(b => b.onclick = () => openStore(st[b.dataset.es]));
+}
+function renderUsers() {
+  $('#userRows').innerHTML = DATA.users.map((u, i) => `<tr><td>${esc(u.FullName)}</td><td>${esc(u.Username)}</td><td>${esc(u.Role)}</td><td>${esc(u.StoreCodes)}</td><td>${esc(u.EmpId || '—')}</td><td>${pill(u.Active)}</td><td>${u.Role === 'SuperAdmin' && S.role !== 'SuperAdmin' ? '' : `<button data-eu="${i}">Edit</button>`}</td></tr>`).join('');
+  document.querySelectorAll('[data-eu]').forEach(b => b.onclick = () => openUser(DATA.users[b.dataset.eu]));
+}
+
+function fill(form, obj) { [...form.elements].forEach(el => { if (el.name) el.value = obj[el.name] ?? (el.tagName === 'SELECT' ? el.options[0].value : ''); }); }
+function read(form) { const o = {}; [...form.elements].forEach(el => { if (el.name) o[el.name] = el.value.trim(); }); return o; }
+
+function openStore(s) {
+  const f = $('#fStore'); fill(f, s || {}); f.StoreCode.readOnly = !!s;
+  $('#dStoreT').textContent = s ? 'Edit location' : 'Add location'; $('#m-store').textContent = '';
+  $('#dStore').showModal();
+}
+$('#addStore').onclick = () => openStore(null);
+$('#sStore').onclick = async e => {
+  e.preventDefault(); const f = $('#fStore'); if (!f.reportValidity()) return;
+  try { await api('saveStore', { store: read(f) }); $('#dStore').close(); await load(); } catch (err) { showMsg($('#m-store'), err.message); }
+};
+
+function openUser(u) {
+  const isSA = u && u.Role === 'SuperAdmin';                // the single C&B login: only name / password can change
+  const roles = isSA ? ['SuperAdmin'] : ['Admin', 'HR', 'Manager'];
+  $('#roleSel').innerHTML = roles.map(r => `<option>${r}</option>`).join('');
+  $('#empSel').innerHTML = '<option value="">— Not linked —</option>' + (DATA.employees || []).map(e => `<option value="${esc(e.EmpId)}">${esc(e.EmpId)} · ${esc(e.FullName)} · ${esc(e.StoreCode)}</option>`).join('');
+  const f = $('#fUser'); fill(f, u || { StoreCodes: 'ALL' }); f.Username.readOnly = !!u; f.Password.value = '';
+  $('#pwL').textContent = u ? 'New password (leave blank to keep)' : 'Password (min 8)';
+  $('#dUserT').textContent = isSA ? 'C&B Super Admin' : u ? 'Edit user' : 'Add user'; $('#m-user').textContent = '';
+  f.Role.disabled = isSA; f.Active.disabled = isSA;
+  $('#dUser').showModal();
+}
+$('#addUser').onclick = () => openUser(null);
+$('#sUser').onclick = async e => {
+  e.preventDefault(); const f = $('#fUser'); if (!f.reportValidity()) return;
+  const u = read(f); if (!u.Password) delete u.Password;
+  try { await api('saveUser', { user: u }); $('#dUser').close(); await load(); } catch (err) { showMsg($('#m-user'), err.message); }
+};
+
+$('#chg').onclick = async () => {
+  try { await api('changeMyPassword', { oldPassword: $('#op').value, newPassword: $('#np').value }); showMsg($('#m-me'), 'Password changed', true); $('#op').value = $('#np').value = ''; }
+  catch (e) { showMsg($('#m-me'), e.message); }
+};
+
+// ---- Files
+let FS = null;
+const FORM_DOCS = ['PHOTO', 'RESUME', 'AADHAR'], LOCKED = ['PHOTO', 'RESUME', 'AADHAR', 'CHECKLIST'];
+async function loadFiles() {
+  FS = await api('getFileSetup');
+  $('#stUrl').value = FS.uploadUrl || ''; $('#stSecret').value = FS.uploadSecret || ''; $('#stDays').value = FS.retentionDays;
+  $('#stState').innerHTML = FS.configured ? '✅ Upload script is set.' : '⚠ Not set yet — uploads are switched off until you paste the Web app URL.';
+  drawDocTypes(FS.docTypes);
+}
+function drawDocTypes(list) {
+  const opt = (v, arr) => arr.map(a => `<option${a === v ? ' selected' : ''}>${a}</option>`).join('');
+  $('#dtBody').innerHTML = list.map(d => `<tr data-code="${esc(d.Code || '')}">
+    <td><input class="dn" value="${esc(d.Name)}"${d.Code === 'CHECKLIST' ? ' readonly' : ''}></td>
+    <td>${LOCKED.includes(d.Code) ? esc(d.AppliesTo) : `<select class="da">${opt(d.AppliesTo || 'Employee', ['Employee', 'Candidate', 'Both'])}</select>`}</td>
+    <td>${FORM_DOCS.includes(d.Code) ? `<select class="dc">${opt(d.CandidateForm || 'Optional', ['Mandatory', 'Optional', 'Hidden'])}</select>` : '—'}</td>
+    <td>${LOCKED.includes(d.Code) ? 'Yes' : `<select class="dx">${opt(d.Active || 'Yes', ['Yes', 'No'])}</select>`}</td>
+    <td>${LOCKED.includes(d.Code) ? '' : '<button type="button" class="sm danger dr">Remove</button>'}</td></tr>`).join('');
+  document.querySelectorAll('.dr').forEach(b => b.onclick = () => b.closest('tr').remove());
+}
+function readDocTypes() {
+  return [...document.querySelectorAll('#dtBody tr')].map(tr => ({ Code: tr.dataset.code, Name: $('.dn', tr).value.trim(),
+    AppliesTo: $('.da', tr) ? $('.da', tr).value : '', CandidateForm: $('.dc', tr) ? $('.dc', tr).value : '', Active: $('.dx', tr) ? $('.dx', tr).value : 'Yes' }));
+}
+$('#dtAdd').onclick = () => drawDocTypes([...readDocTypes(), { Code: '', Name: '', AppliesTo: 'Employee', Active: 'Yes' }]);
+$('#dtSave').onclick = async () => { try { await api('saveDocTypes', { docTypes: readDocTypes() }); showMsg($('#m-dt'), 'Saved', true); await loadFiles(); } catch (e) { showMsg($('#m-dt'), e.message); } };
+const stSave = async (newSecret) => {
+  try { const r = await api('saveStorageSettings', { uploadUrl: $('#stUrl').value.trim(), retentionDays: $('#stDays').value, newSecret }); await loadFiles(); showMsg($('#m-st'), r.message, true); }
+  catch (e) { showMsg($('#m-st'), e.message); }
+};
+$('#stSave').onclick = () => stSave(false);
+$('#stNew').onclick = async () => { if (await uiConfirm('Create a new secret? Uploads stop until you paste it into Upload.gs and deploy a new version.')) stSave(true); };
+$('#stTest').onclick = async () => { showMsg($('#m-st'), 'Testing…', true); try { showMsg($('#m-st'), (await api('testStorage')).message, true); } catch (e) { showMsg($('#m-st'), e.message); } };
+$('#stClean').onclick = async () => { try { showMsg($('#m-st'), (await api('runFileCleanup')).message, true); } catch (e) { showMsg($('#m-st'), e.message); } };
+$('#stCopy').onclick = () => { navigator.clipboard.writeText($('#stSecret').value); showMsg($('#m-st'), 'Secret copied', true); };
+
+// ---- Apply form
+let FQ = [], FSETUP = null;
+const SYS_TYPES = { Phone: 'Mobile', Position: 'Position list', Store: 'Store list', Source: 'Sources list' };
+async function loadFormSetup() {
+  FSETUP = await api('getFormSetup'); FQ = FSETUP.form.map(q => ({ ...q })); drawFQ(); drawLists();
+}
+function syncFQ() {
+  document.querySelectorAll('#fqBody tr').forEach((tr, i) => { const q = FQ[i];
+    q.Label = $('.qL', tr).value; q.Section = $('.qS', tr).value; if ($('.qT', tr)) q.Type = $('.qT', tr).value;
+    if ($('.qO', tr)) q.Options = $('.qO', tr).value; if ($('.qH', tr)) q.Hint = $('.qH', tr).value; if ($('.qX', tr)) q.Setting = $('.qX', tr).value; });
+}
+function drawFQ() {
+  const locked = FSETUP.locked, sel = (v, arr) => arr.map(a => `<option ${a === v ? 'selected' : ''}>${a}</option>`).join('');
+  $('#secList').innerHTML = [...new Set(FQ.map(q => q.Section))].map(x => `<option value="${esc(x)}">`).join('');
+  $('#fqBody').innerHTML = FQ.map((q, i) => `<tr class="${q.Setting === 'Hidden' ? 'muted-row' : ''}">
+    <td style="white-space:nowrap"><button type="button" class="sm" data-up="${i}" ${i ? '' : 'disabled'} aria-label="Move up">↑</button><button type="button" class="sm" data-dn="${i}" ${i < FQ.length - 1 ? '' : 'disabled'} aria-label="Move down">↓</button></td>
+    <td><input class="qL" value="${esc(q.Label)}"></td>
+    <td><input class="qS" value="${esc(q.Section)}" list="secList"></td>
+    <td>${q.System === 'Yes' ? `<span class="sub">${esc(SYS_TYPES[q.Type] || q.Type)}</span>` : `<select class="qT">${sel(q.Type, FSETUP.types)}</select>`}</td>
+    <td>${q.Type === 'Dropdown' ? `<input class="qO" value="${esc(q.Options)}" placeholder="Option 1, Option 2, …">` : ['Text', 'Number', 'Long text', 'Email', 'Phone'].includes(q.Type) ? `<input class="qH" value="${esc(q.Hint)}" placeholder="Hint (optional)">` : ''}</td>
+    <td>${locked.includes(q.Code) ? '<b>Mandatory</b> <span class="sub">(fixed)</span>' : `<select class="qX">${sel(q.Setting, ['Mandatory', 'Optional', 'Hidden'])}</select>`}</td>
+    <td>${q.System === 'Yes' ? '' : `<button type="button" class="sm danger" data-rm="${i}">Remove</button>`}</td></tr>`).join('');
+  const mv = (i, d) => { syncFQ(); const [x] = FQ.splice(i, 1); FQ.splice(i + d, 0, x); drawFQ(); };
+  document.querySelectorAll('[data-up]').forEach(b => b.onclick = () => mv(+b.dataset.up, -1));
+  document.querySelectorAll('[data-dn]').forEach(b => b.onclick = () => mv(+b.dataset.dn, 1));
+  document.querySelectorAll('[data-rm]').forEach(b => b.onclick = async () => { syncFQ(); if (await uiConfirm('Remove this question? Answers already given stay in the sheet.')) { FQ.splice(+b.dataset.rm, 1); drawFQ(); } });
+  document.querySelectorAll('.qT, .qX').forEach(x => x.onchange = () => { syncFQ(); drawFQ(); });
+}
+$('#fqAdd').onclick = () => { syncFQ(); FQ.push({ Code: '', Label: '', Section: FQ.length ? FQ[FQ.length - 1].Section : 'A few questions', Type: 'Text', Options: '', Hint: '', Setting: 'Optional', System: 'No' }); drawFQ(); $('#fqBody tr:last-child .qL').focus(); };
+$('#fqSave').onclick = async () => {
+  syncFQ();
+  try { const r = await api('saveApplyForm', { form: FQ }); await loadFormSetup(); showMsg($('#m-fq'), r.message, true); } catch (e) { showMsg($('#m-fq'), e.message); }
+};
+// ---- Lists
+function drawLists() {
+  $('#lsBody').innerHTML = Object.entries(FSETUP.listNames).map(([k, n]) => `<div><label for="ls_${k}">${esc(n)}</label><textarea id="ls_${k}" rows="8">${esc((FSETUP.lists[k] || []).join('\n'))}</textarea></div>`).join('');
+}
+$('#lsSave').onclick = async () => {
+  const lists = {}; Object.keys(FSETUP.listNames).forEach(k => lists[k] = $('#ls_' + k).value.split('\n').map(x => x.trim()).filter(Boolean));
+  try { const r = await api('saveLists', { lists }); await loadFormSetup(); showMsg($('#m-ls'), r.message, true); } catch (e) { showMsg($('#m-ls'), e.message); }
+};
+
+// ---- Company logo (same image as Letters → Letterhead)
+function showLogo(src) { $('#logoPv').src = src || ''; $('#logoPv').classList.toggle('hidden', !src); $('#logoNone').classList.toggle('hidden', !!src); $('#logoX').classList.toggle('hidden', !src); }
+function shrinkImg(file, maxW) {
+  return new Promise((res, rej) => { const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => { let w = Math.min(maxW, img.width), out = '';
+      for (let i = 0; i < 6; i++) { const c = document.createElement('canvas'); c.width = w; c.height = Math.round(img.height * w / img.width);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); out = c.toDataURL('image/png'); if (out.length > 45000) out = c.toDataURL('image/jpeg', .85);
+        if (out.length <= 45000) break; w = Math.round(w * .75); }
+      URL.revokeObjectURL(url); out.length <= 45000 ? res(out) : rej(new Error('The image is too detailed. Try a simpler or smaller logo.')); };
+    img.onerror = () => rej(new Error('That file is not an image')); img.src = url; });
+}
+async function saveLogo(v) {
+  await api('saveBranding', { values: { BrandLogo: v } }); showLogo(v);
+  const s = Session.get(); s.logo = v; Session.set(s); renderTop('settings'); showMsg($('#m-logo'), v ? 'Logo saved' : 'Logo removed', true);
+}
+$('#logoF').onchange = async () => { const f = $('#logoF').files[0]; if (!f) return;
+  try { await saveLogo(await shrinkImg(f, 400)); } catch (e) { showMsg($('#m-logo'), e.message); } $('#logoF').value = ''; };
+$('#logoX').onclick = async () => { if (await uiConfirm('Remove the company logo?', { okText: 'Remove' })) try { await saveLogo(''); } catch (e) { showMsg($('#m-logo'), e.message); } };
+
+// ---- Start fresh (C&B only)
+$('#rsGo').onclick = async () => {
+  const confirmText = $('#rsConf').value.trim();
+  if (!confirmText) return showMsg($('#m-rs'), 'Type the confirmation first');
+  if (!await uiConfirm('Delete ALL data of this company? Only the C&B login stays. This cannot be undone.', { okText: 'Yes, clear everything', danger: true, title: 'Start fresh' })) return;
+  try {
+    const r = await api('resetAllData', { confirm: confirmText, newCompanyName: $('#rsNew').value.trim() });
+    const s = Session.get(); s.company = $('#rsNew').value.trim(); s.logo = ''; s.modules = null; Session.set(s);
+    await uiAlert(r.message, 'Done'); location.reload();
+  } catch (e) { showMsg($('#m-rs'), e.message); }
+};
+
+// ---- Languages (C&B only)
+async function loadLangs() {
+  const r = await api('getLanguages');
+  $('#langList').innerHTML = LANGS.map(([c, n]) => `<label class="mod-row"><input type="checkbox" value="${c}" ${c === 'en' || r.languages.includes(c) ? 'checked' : ''} ${c === 'en' ? 'disabled' : ''} style="width:auto">
+    <span translate="no"><b>${esc(n)}</b><span class="sub">${c === 'en' ? 'Always available — the language the data is stored in' : 'Shown by Google Translate'}</span></span></label>`).join('');
+}
+$('#langSave').onclick = async () => {
+  const languages = [...document.querySelectorAll('#langList input:checked:not(:disabled)')].map(x => x.value);
+  try { const r = await api('saveLanguages', { languages }); const s = Session.get(); s.languages = r.languages; Session.set(s); showMsg($('#m-lang'), 'Saved — reloading…', true); setTimeout(() => location.reload(), 700); }
+  catch (e) { showMsg($('#m-lang'), e.message); }
+};
+
+// ---- Modules (C&B only)
+let MODS = null;
+async function loadModules() {
+  MODS = await api('getModules');
+  $('#modList').innerHTML = MODS.all.map(m => `<label class="mod-row"><input type="checkbox" value="${m.key}" ${MODS.modules.includes(m.key) ? 'checked' : ''} style="width:auto">
+    <span><b>${esc(m.name)}</b><span class="sub">${esc(m.desc)}${m.needs ? ' · needs ' + m.needs.map(n => MODS.all.find(x => x.key === n).name).join(', ') : ''}</span></span></label>`).join('');
+  document.querySelectorAll('#modList input').forEach(cb => cb.onchange = () => {          // keep dependencies consistent
+    const all = MODS.all, on = k => $(`#modList input[value="${k}"]`);
+    const me = all.find(m => m.key === cb.value);
+    if (cb.checked && me.needs) me.needs.forEach(n => on(n).checked = true);
+    if (!cb.checked) all.filter(m => (m.needs || []).includes(cb.value)).forEach(m => on(m.key).checked = false);
+  });
+}
+$('#modSave').onclick = async () => {
+  const modules = [...document.querySelectorAll('#modList input:checked')].map(x => x.value);
+  try { const r = await api('saveModules', { modules }); const s = Session.get(); s.modules = r.modules; Session.set(s); showMsg($('#m-mod'), 'Saved — reloading…', true); setTimeout(() => location.reload(), 700); }
+  catch (e) { showMsg($('#m-mod'), e.message); }
+};
+
+if (S) {
+  load().catch(e => uiAlert(e.message));
+  if (isSA) { loadModules().catch(e => showMsg($('#m-mod'), e.message)); loadLangs().catch(e => showMsg($('#m-lang'), e.message)); if (hasMod('HIRING')) loadFormSetup().catch(e => showMsg($('#m-fq'), e.message)); if (hasMod('FILES')) loadFiles().catch(e => showMsg($('#m-st'), e.message)); }
+}
+</script></body></html>

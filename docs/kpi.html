@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KPIs</title><link rel="stylesheet" href="assets/app.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script></head>
+<body>
+<header class="top" id="top"></header>
+<main>
+  <div class="tabs" id="tabs">
+    <button data-t="params" class="on">KPI parameters</button>
+    <button data-t="bands">Rating bands</button>
+    <button data-t="entry">Monthly entry</button>
+    <button data-t="approve" id="apTab">Approval</button>
+    <button data-t="reports">Reports</button>
+  </div>
+
+  <section id="t-params">
+    <div class="split">
+      <section class="card">
+        <h2>Positions</h2><p class="sub" id="cov"></p>
+        <ul class="plist" id="plist"></ul>
+        <div id="impBtns" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+          <button id="tpl">Download template</button><button id="imp">Import Excel</button><input type="file" id="file" accept=".xlsx,.xls" class="hidden">
+        </div>
+      </section>
+      <section class="card" id="view"><p class="sub">Choose a position.</p></section>
+    </div>
+  </section>
+
+  <section id="t-bands" class="card hidden" style="max-width:720px">
+    <h2>Rating bands</h2><p class="sub">The total KPI score (out of 100, can go higher with over-achievement) decides the band.</p>
+    <table><thead><tr><th>Band</th><th>Min score</th><th>Max score</th><th>Meaning</th><th></th></tr></thead><tbody id="bandRows"></tbody></table>
+    <div class="row-end"><button id="addBand">+ Add band</button><span class="msg" id="m-b"></span><button class="btn" id="saveBands">Save</button></div>
+  </section>
+
+  <section id="t-entry" class="hidden">
+    <section class="card">
+      <div class="filters">
+        <div><label>Month</label><input type="month" id="month"></div>
+        <div><label>Store</label><select id="eStore"></select></div>
+        <div><label>Status</label><select id="eStat"><option value="">All</option><option>Not started</option><option>Draft</option><option>Returned</option><option>Submitted</option><option>Approved</option></select></div>
+        <div><label>Search</label><input id="eq" placeholder="Name or ID"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center">
+        <p class="sub" id="eInfo" style="margin:0"></p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><button id="dlTeam">Download team sheet</button><button id="ulTeam">Upload team sheet</button><input type="file" id="tfile" accept=".xlsx,.xls" class="hidden"><button class="btn" id="subAll">Submit all complete</button></div>
+      </div>
+    </section>
+    <section class="card"><div class="tbl-wrap"><table><thead><tr><th>Employee</th><th>Position</th><th>Store</th><th>Score</th><th>Band</th><th>Status</th></tr></thead><tbody id="eRows"></tbody></table></div></section>
+  </section>
+
+  <section id="t-approve" class="card hidden">
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:start">
+      <div><h2>Approval — <span id="apMonth"></span></h2><p class="sub" id="apInfo"></p></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button id="lockBtn"></button></div>
+    </div>
+    <div class="tbl-wrap"><table><thead><tr><th><input type="checkbox" id="apAll" style="width:auto"></th><th>Employee</th><th>Position</th><th>Store</th><th>Manager</th><th>Score</th><th>Band</th><th>Remarks</th></tr></thead><tbody id="apRows"></tbody></table></div>
+    <div class="row-end"><span class="msg" id="m-ap"></span><button id="retSel">Return selected</button><button class="btn" id="okSel">Approve selected</button></div>
+  </section>
+
+  <dialog id="dE" style="width:min(760px,95vw)"><form method="dialog" id="fE">
+    <h3 id="dET"></h3><p class="sub" id="dES"></p>
+    <div class="tbl-wrap"><table><thead><tr><th>KPI</th><th>Target</th><th style="width:130px">Actual</th><th>Achievement</th><th>Weight</th><th>Score</th></tr></thead><tbody id="eKpis"></tbody>
+    <tfoot><tr><th colspan="5" style="text-align:right">Total score</th><th id="eTot">—</th></tr></tfoot></table></div>
+    <label>Remarks</label><input id="eRem" placeholder="Optional comments for HR">
+    <div class="row-end"><span class="msg" id="m-e"></span><button value="cancel" formnovalidate>Close</button><button id="eSave">Save draft</button><button class="btn" id="eSub">Submit to HR</button></div>
+  </form></dialog>
+
+  <section id="t-reports" class="hidden">
+    <section class="card">
+      <div class="filters">
+        <div><label>From</label><input type="month" id="rFrom"></div>
+        <div><label>To</label><input type="month" id="rTo"></div>
+        <div><label>Store</label><select id="rStore"><option value="">All</option></select></div>
+        <div><label>Include</label><select id="rInc"><option value="approved">Approved only</option><option value="submitted">Approved + submitted</option></select></div>
+        <div style="flex:0"><label>&nbsp;</label><button class="btn" id="rGo">Show</button></div>
+      </div>
+    </section>
+    <div class="kpis-row" id="rTiles"></div>
+    <div class="cols2">
+      <section class="card"><h2>Band distribution</h2><p class="sub" id="rBandSub"></p><div class="bars" id="rBands"></div></section>
+      <section class="card"><h2>Average score by store</h2><p class="sub">Latest month in range</p><div class="bars" id="rStores"></div></section>
+    </div>
+    <section class="card"><h2>Average score by position</h2><p class="sub">Latest month in range</p><div class="bars" id="rPos"></div></section>
+    <div class="cols2">
+      <section class="card"><h2>Top 10</h2><div class="tbl-wrap"><table><tbody id="rTop"></tbody></table></div></section>
+      <section class="card"><h2>Watch list</h2><p class="sub">Lowest band in 2 or more months of the range</p><div class="tbl-wrap"><table><tbody id="rWatch"></tbody></table></div></section>
+    </div>
+    <section class="card">
+      <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:end">
+        <div><h2>Employee trend</h2><p class="sub">Score month by month, and KPI detail</p></div>
+        <div style="display:flex;gap:8px;align-items:end"><div style="min-width:240px"><label>Employee</label><select id="rEmp"></select></div><button id="rExport">Export summary (Excel)</button></div>
+      </div>
+      <div id="rTrend"></div>
+    </section>
+  </section>
+
+  <section id="t-soon" class="card hidden"><h2>Coming next</h2><p class="sub">Monthly entry, approval and reports are being built in the next parts.</p></section>
+</main>
+
+<dialog id="dK"><form method="dialog" id="fK">
+  <h3 id="dKT">KPI</h3>
+  <div class="grid">
+    <div style="grid-column:1/-1"><label>KPI name</label><input name="KpiName" required placeholder="e.g. Sales achievement"></div>
+    <div><label>Category</label><select name="Category"><option>Sales</option><option>Operations</option><option>Customer</option><option>People</option><option>Learning</option><option>Discipline</option></select></div>
+    <div><label>Unit</label><select name="Unit"><option>%</option><option>Rs</option><option>Count</option><option>Days</option><option>Score</option></select></div>
+    <div><label>Direction</label><select name="Direction"><option>Higher is better</option><option>Lower is better</option></select></div>
+    <div><label>Monthly target</label><input name="Target" type="number" step="any" required></div>
+    <div><label>Weight %</label><input name="WeightPct" type="number" step="any" min="1" max="100" required></div>
+    <div><label>Score cap % <span class="hint">(max credit)</span></label><input name="ScoreCapPct" type="number" min="100" value="100"></div>
+    <div><label>Entered by</label><select name="EnteredBy"><option>Reporting Manager</option><option>HR</option></select></div>
+    <div><label>Evidence needed</label><select name="EvidenceNeeded"><option>No</option><option>Yes</option></select></div>
+    <div style="grid-column:1/-1"><label>Definition / how measured</label><input name="Definition" placeholder="e.g. Actual sales ÷ monthly target × 100"></div>
+  </div>
+  <div class="row-end"><span class="msg" id="m-k"></span><button value="cancel" formnovalidate>Cancel</button><button class="btn" id="sK">Save</button></div>
+</form></dialog>
+
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+const S = guard(['SuperAdmin', 'Admin', 'HR', 'Manager'], 'KPI');
+renderTop('kpi');
+const canEdit = S && ['SuperAdmin', 'Admin', 'HR'].includes(S.role);
+if (!canEdit) $('#impBtns').classList.add('hidden');
+let D = null, cur = null, editName = null;
+const pos = c => D.positions.find(p => p.PositionCode === c);
+const kpisOf = c => D.params.filter(k => k.PositionCode === c);
+const total = c => kpisOf(c).reduce((a, k) => a + Number(k.WeightPct || 0), 0);
+
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+  ['params', 'bands', 'soon', 'entry', 'approve', 'reports'].forEach(t => $('#t-' + t).classList.toggle('hidden', t !== b.dataset.t));
+  if (b.dataset.t === 'entry' || b.dataset.t === 'approve') loadMonth();
+  if (b.dataset.t === 'reports' && !R) loadReport();
+});
+
+async function load() { D = await api('getKpiSetup'); list(); bands(); if (cur) show(cur); }
+
+function ordered() {
+  const out = [], walk = (code, d) => D.positions.filter(p => (p.ParentPositionCode || '') === code).sort((a, b) => a.PositionName.localeCompare(b.PositionName)).forEach(p => { out.push([p, d]); walk(p.PositionCode, d + 1); });
+  walk('', 0); D.positions.forEach(p => { if (!out.find(o => o[0] === p)) out.push([p, 0]); });
+  return out;
+}
+function list() {
+  const ok = D.positions.filter(p => Math.abs(total(p.PositionCode) - 100) < 0.01).length;
+  $('#cov').textContent = `${ok} of ${D.positions.length} positions ready (weights = 100%)`;
+  $('#plist').innerHTML = ordered().map(([p, d]) => {
+    const t = total(p.PositionCode), n = kpisOf(p.PositionCode).length;
+    const tag = !n ? '<span class="dot"></span>' : Math.abs(t - 100) < 0.01 ? '<span class="dot ok"></span>' : `<span class="under" style="font-size:12px">${t}%</span>`;
+    return `<li data-c="${esc(p.PositionCode)}" class="${p.PositionCode === cur ? 'on' : ''}"><span style="padding-left:${d * 12}px">${esc(p.PositionName)}</span>${tag}</li>`;
+  }).join('');
+  document.querySelectorAll('#plist li').forEach(li => li.onclick = () => show(li.dataset.c));
+}
+
+function show(code) {
+  cur = code; list();
+  const p = pos(code), ks = kpisOf(code), t = total(code);
+  const state = !ks.length ? '<span class="sub">No KPIs yet.</span>' : Math.abs(t - 100) < 0.01 ? '<span class="pill yes">Weights total 100% ✓</span>' : `<span class="pill no">Weights total ${t}% — must be 100%</span>`;
+  $('#view').innerHTML = `<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:start">
+      <div><h2>${esc(p.PositionName)}</h2><p class="sub">${esc(p.PositionCode)} · ${esc(p.Branch)} · ${state}</p></div>
+      ${canEdit ? '<button class="btn" id="addK">+ Add KPI</button>' : ''}</div>
+    <div class="tbl-wrap"><table><thead><tr><th>KPI</th><th>Category</th><th>Target</th><th>Direction</th><th>Weight</th><th>Cap</th><th>Entered by</th><th></th></tr></thead><tbody>
+    ${ks.map((k, i) => `<tr><td><b>${esc(k.KpiName)}</b><div class="sub" style="margin:0;font-size:12px">${esc(k.Definition)}</div></td><td>${esc(k.Category)}</td><td>${esc(k.Target)} ${esc(k.Unit)}</td><td>${k.Direction === 'Lower is better' ? '↓ Lower' : '↑ Higher'}</td><td>${esc(k.WeightPct)}%</td><td>${esc(k.ScoreCapPct)}%</td><td>${esc(k.EnteredBy)}</td>
+      <td>${canEdit ? `<button data-e="${i}">Edit</button> <button data-r="${i}">Remove</button>` : ''}</td></tr>`).join('') || ''}
+    </tbody></table></div>
+    <p class="sub" style="margin-top:12px">Score per KPI = achievement % (capped) × weight. Higher is better: actual ÷ target. Lower is better: target ÷ actual (when the target is 0: 0 → 100%, 1 → 70%, 2 → 40%, 3+ → 0%).</p>`;
+  if (!canEdit) return;
+  $('#addK').onclick = () => openK(null);
+  document.querySelectorAll('[data-e]').forEach(b => b.onclick = () => openK(ks[b.dataset.e]));
+  document.querySelectorAll('[data-r]').forEach(b => b.onclick = async () => {
+    const k = ks[b.dataset.r]; if (!await uiConfirm(`Remove "${k.KpiName}" from ${p.PositionName}?`)) return;
+    try { await api('removeKpiParam', { positionCode: code, kpiName: k.KpiName }); await load(); } catch (e) { uiAlert(e.message); }
+  });
+}
+
+function openK(k) {
+  editName = k ? k.KpiName : null;
+  const f = $('#fK');
+  [...f.elements].forEach(el => { if (el.name) el.value = k ? (k[el.name] ?? '') : (el.tagName === 'SELECT' ? el.options[0].value : el.name === 'ScoreCapPct' ? 100 : ''); });
+  if (!k) f.WeightPct.value = Math.max(0, 100 - total(cur)) || '';
+  $('#dKT').textContent = (k ? 'Edit KPI — ' : 'Add KPI — ') + pos(cur).PositionName; $('#m-k').textContent = '';
+  $('#dK').showModal();
+}
+$('#sK').onclick = async e => {
+  e.preventDefault(); const f = $('#fK'); if (!f.reportValidity()) return;
+  const o = { PositionCode: cur }; [...f.elements].forEach(el => { if (el.name) o[el.name] = el.value.trim(); });
+  try { await api('saveKpiParam', { param: o, originalName: editName }); $('#dK').close(); await load(); } catch (err) { showMsg($('#m-k'), err.message); }
+};
+
+// Rating bands
+function bands() {
+  $('#bandRows').innerHTML = D.bands.map(b => `<tr><td><input class="bB" value="${esc(b.Band)}" style="width:70px"></td><td><input class="bMin" type="number" step="any" value="${esc(b.MinScore)}"></td><td><input class="bMax" type="number" step="any" value="${esc(b.MaxScore)}"></td><td><input class="bM" value="${esc(b.Meaning)}"></td><td><button class="bDel">✕</button></td></tr>`).join('');
+  document.querySelectorAll('.bDel').forEach(b => b.onclick = () => b.closest('tr').remove());
+  if (!canEdit) document.querySelectorAll('#t-bands input,#t-bands button').forEach(x => x.disabled = true);
+}
+$('#addBand').onclick = () => { D.bands = readBands().concat([{ Band: '', MinScore: 0, MaxScore: 0, Meaning: '' }]); bands(); };
+const readBands = () => [...document.querySelectorAll('#bandRows tr')].map(r => ({ Band: r.querySelector('.bB').value, MinScore: r.querySelector('.bMin').value, MaxScore: r.querySelector('.bMax').value, Meaning: r.querySelector('.bM').value }));
+$('#saveBands').onclick = async () => { try { await api('saveBands', { bands: readBands() }); showMsg($('#m-b'), 'Saved', true); await load(); } catch (e) { showMsg($('#m-b'), e.message); } };
+
+// Excel
+const COLS = [['PositionCode','Position Code'],['KpiName','KPI Name'],['Category','Category'],['Definition','Definition / How Measured'],['Unit','Unit'],['Direction','Direction'],['Target','Target'],['WeightPct','Weight %'],['ScoreCapPct','Score Cap %'],['EnteredBy','Entered By'],['EvidenceNeeded','Evidence Needed']];
+$('#tpl').onclick = () => {
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([COLS.map(c => c[1]), ...D.params.map(k => COLS.map(([c]) => k[c]))]), 'KPI Parameters');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Position Code', 'Position Name'], ...D.positions.map(p => [p.PositionCode, p.PositionName])]), 'Positions (reference)');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Rules'], ['One row per KPI per position. Weights of each position must add up to 100.'], ['Category: Sales / Operations / Customer / People / Learning / Discipline'], ['Unit: % / Rs / Count / Days / Score.  Direction: Higher is better / Lower is better'], ['Score Cap % = maximum credit for over-achievement (100 or more, e.g. 120).'], ['Entered By: Reporting Manager / HR.  Importing a position replaces all its KPIs.']]), 'Read Me');
+  XLSX.writeFile(wb, 'KPI_Import_Template.xlsx');
+};
+$('#imp').onclick = () => $('#file').click();
+$('#file').onchange = async () => {
+  const f = $('#file').files[0]; if (!f) return; $('#file').value = '';
+  const wb = XLSX.read(await f.arrayBuffer());
+  const ws = wb.Sheets['KPI Parameters'] || wb.Sheets[wb.SheetNames[0]];
+  const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+  const h = aoa.findIndex(r => r.some(c => String(c).trim().toLowerCase() === 'kpi name'));
+  if (h < 0) return uiAlert('Could not find a "KPI Name" column. Use the downloaded template.');
+  const head = aoa[h].map(x => String(x).trim().toLowerCase());
+  const idx = COLS.map(([k, l]) => [k, head.findIndex(x => x.startsWith(l.toLowerCase()))]);
+  const rows = aoa.slice(h + 1).map(r => { const o = {}; idx.forEach(([k, i]) => o[k] = i >= 0 ? String(r[i]).trim() : ''); return o; }).filter(o => o.PositionCode && o.KpiName);
+  if (!await uiConfirm(`Import ${rows.length} KPIs? Positions in the file will have their KPIs replaced.`)) return;
+  try { const r = await api('importKpiParams', { rows }); uiAlert(r.message); await load(); } catch (e) { uiAlert(e.message); }
+};
+
+
+// ───── Monthly entry & approval ─────
+const isHR = S && ['SuperAdmin', 'Admin', 'HR'].includes(S.role);
+const isAdmin = S && ['SuperAdmin', 'Admin'].includes(S.role);
+if (!isHR) $('#apTab').classList.add('hidden');
+let M = null, curEmp = null;
+(() => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1); $('#month').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); })();
+$('#month').addEventListener('change', loadMonth);
+['eStore', 'eStat'].forEach(i => $('#' + i).addEventListener('change', drawEntry));
+$('#eq').addEventListener('input', drawEntry);
+
+function score(k, actual) {
+  if (actual === '' || actual === null || actual === undefined || isNaN(actual)) return { ach: '', score: '' };
+  const a = Number(actual), t = Number(k.Target), cap = Number(k.ScoreCapPct || 100); let ach;
+  if (k.Direction === 'Lower is better') ach = t > 0 ? (a <= t ? 100 : t / a * 100) : [100, 70, 40, 0][Math.min(Math.max(Math.round(a), 0), 3)];
+  else ach = t > 0 ? a / t * 100 : (a > 0 ? 100 : 0);
+  ach = Math.max(0, Math.min(ach, cap));
+  return { ach: Math.round(ach * 100) / 100, score: Math.round(ach * k.WeightPct) / 100 };
+}
+const bandOf = t => ([...M.bands].sort((a, b) => b.MinScore - a.MinScore).find(b => t >= Number(b.MinScore)) || {}).Band || '';
+const pName = c => (M.positions.find(p => p.PositionCode === c) || {}).PositionName || c;
+const eName = id => (M.employees.find(e => e.EmpId === id) || {}).FullName || id || '';
+const sumOf = id => M.summaries.find(x => x.EmpId === id);
+const statusOf = id => (sumOf(id) || {}).Status || 'Not started';
+const kpisFor = e => D.params.filter(k => k.PositionCode === e.PositionCode);
+const locked = () => M && M.cycle.Status === 'Locked';
+const pillCls = s => s === 'Approved' ? 'yes' : s === 'Returned' ? 'no' : '';
+
+async function loadMonth() {
+  try { M = await api('getKpiMonth', { month: $('#month').value }); } catch (e) { uiAlert(e.message); return; }
+  const stores = [...new Set(M.employees.map(e => e.StoreCode))].sort();
+  const keep = $('#eStore').value;
+  $('#eStore').innerHTML = '<option value="">All</option>' + stores.map(s => `<option>${esc(s)}</option>`).join(''); $('#eStore').value = keep;
+  drawEntry(); drawApprove();
+}
+
+function drawEntry() {
+  const st = $('#eStore').value, ss = $('#eStat').value, q = $('#eq').value.trim().toLowerCase();
+  const list = M.employees.filter(e => (!st || e.StoreCode === st) && (!ss || statusOf(e.EmpId) === ss) && (!q || (e.FullName + ' ' + e.EmpId).toLowerCase().includes(q)));
+  const counts = {}; M.employees.forEach(e => { const s = statusOf(e.EmpId); counts[s] = (counts[s] || 0) + 1; });
+  $('#eInfo').innerHTML = `${M.employees.length} in ${S.role === 'Manager' ? 'your team' : 'scope'} · ` + ['Not started', 'Draft', 'Returned', 'Submitted', 'Approved'].filter(s => counts[s]).map(s => `${s}: <b>${counts[s]}</b>`).join(' · ') + (locked() ? ' · <span class="pill no">Month locked</span>' : '');
+  $('#eRows').innerHTML = list.map(e => { const sm = sumOf(e.EmpId) || {}; const s = statusOf(e.EmpId);
+    return `<tr class="click" data-id="${esc(e.EmpId)}"><td><b>${esc(e.FullName)}</b><div class="sub" style="margin:0;font-size:12px">${esc(e.EmpId)}</div></td><td>${esc(pName(e.PositionCode))}</td><td>${esc(e.StoreCode)}</td><td>${sm.TotalScore !== undefined && sm.TotalScore !== '' ? esc(sm.TotalScore) : '—'}</td><td>${esc(sm.Band || '—')}</td><td><span class="pill ${pillCls(s)}">${esc(s)}</span></td></tr>`; }).join('')
+    || `<tr><td colspan="6" style="color:var(--muted)">${S.role === 'Manager' ? 'No one reports to you, or your login is not linked to your employee record.' : 'No employees.'}</td></tr>`;
+  document.querySelectorAll('#eRows tr.click').forEach(r => r.onclick = () => openEntry(r.dataset.id));
+  $('#subAll').disabled = $('#ulTeam').disabled = locked();
+}
+
+function openEntry(id) {
+  const e = M.employees.find(x => x.EmpId === id); curEmp = e;
+  const ks = kpisFor(e), sm = sumOf(id) || {}, st = statusOf(id);
+  const ro = locked() || st === 'Approved' || (st === 'Submitted' && !isHR);
+  $('#dET').textContent = `${e.FullName} — ${M.month}`;
+  $('#dES').innerHTML = `${esc(pName(e.PositionCode))} · ${esc(e.StoreCode)} · <span class="pill ${pillCls(st)}">${esc(st)}</span>` + (ks.length ? '' : ' · <span class="under">No KPIs set for this position</span>');
+  $('#eKpis').innerHTML = ks.map((k, i) => {
+    const en = M.entries.find(x => x.EmpId === id && x.KpiName === k.KpiName) || {};
+    const lockedField = ro || (k.EnteredBy === 'HR' && !isHR);
+    return `<tr><td><b>${esc(k.KpiName)}</b><div class="sub" style="margin:0;font-size:12px">${k.Direction === 'Lower is better' ? '↓ lower is better' : '↑ higher is better'}${k.EnteredBy === 'HR' ? ' · entered by HR' : ''}</div></td>
+      <td>${esc(k.Target)} ${esc(k.Unit)}</td><td><input type="number" step="any" class="act" data-i="${i}" value="${esc(en.Actual ?? '')}" ${lockedField ? 'disabled' : ''}></td>
+      <td class="ach"></td><td>${esc(k.WeightPct)}%</td><td class="sc"></td></tr>`; }).join('');
+  $('#eRem').value = sm.ManagerRemarks || ''; $('#eRem').disabled = ro;
+  $('#eSave').classList.toggle('hidden', ro); $('#eSub').classList.toggle('hidden', ro || st === 'Submitted');
+  $('#m-e').textContent = '';
+  const recalc = () => { let tot = 0, all = true;
+    document.querySelectorAll('#eKpis tr').forEach((tr, i) => { const v = tr.querySelector('.act').value; const r = score(ks[i], v === '' ? '' : Number(v));
+      tr.querySelector('.ach').textContent = r.ach === '' ? '—' : r.ach + '%'; tr.querySelector('.sc').textContent = r.score === '' ? '—' : r.score; if (r.score === '') all = false; else tot += r.score; });
+    $('#eTot').textContent = all && ks.length ? `${Math.round(tot * 100) / 100} (${bandOf(tot)})` : '—'; };
+  document.querySelectorAll('.act').forEach(x => x.addEventListener('input', recalc)); recalc();
+  $('#dE').showModal();
+}
+async function saveOne(submit) {
+  const ks = kpisFor(curEmp), actuals = {};
+  document.querySelectorAll('#eKpis .act').forEach((x, i) => { if (!x.disabled) actuals[ks[i].KpiName] = x.value; });
+  try {
+    const r = await api('saveKpiEntries', { month: M.month, submit, items: [{ EmpId: curEmp.EmpId, actuals, remarks: $('#eRem').value }] });
+    if (r.errors && r.errors.length) return showMsg($('#m-e'), r.errors.join('; '));
+    $('#dE').close(); await loadMonth();
+  } catch (err) { showMsg($('#m-e'), err.message); }
+}
+$('#eSave').onclick = ev => { ev.preventDefault(); saveOne(false); };
+$('#eSub').onclick = ev => { ev.preventDefault(); saveOne(true); };
+
+$('#subAll').onclick = async () => {
+  const ready = M.employees.filter(e => ['Draft', 'Returned'].includes(statusOf(e.EmpId)));
+  if (!ready.length) return uiAlert('Nothing in Draft to submit.');
+  if (!await uiConfirm(`Submit ${ready.length} employees to HR? Only those with all KPIs filled will go.`)) return;
+  try { const r = await api('saveKpiEntries', { month: M.month, submit: true, items: ready.map(e => ({ EmpId: e.EmpId })) }); uiAlert(r.message + (r.errors.length ? '\n\n' + r.errors.join('\n') : '')); await loadMonth(); } catch (e) { uiAlert(e.message); }
+};
+
+// Team sheet: one row per employee x KPI
+$('#dlTeam').onclick = () => {
+  const rows = [['Employee ID', 'Name', 'Position', 'Store', 'KPI', 'Target', 'Unit', 'Direction', 'Entered By', 'Actual']];
+  M.employees.forEach(e => kpisFor(e).forEach(k => { const en = M.entries.find(x => x.EmpId === e.EmpId && x.KpiName === k.KpiName) || {};
+    rows.push([e.EmpId, e.FullName, pName(e.PositionCode), e.StoreCode, k.KpiName, k.Target, k.Unit, k.Direction, k.EnteredBy, en.Actual ?? '']); }));
+  const wb = XLSX.utils.book_new(); const ws = XLSX.utils.aoa_to_sheet(rows); ws['!cols'] = rows[0].map((h, i) => ({ wch: i === 4 ? 30 : 14 }));
+  XLSX.utils.book_append_sheet(wb, ws, 'KPI ' + M.month);
+  XLSX.writeFile(wb, `KPI_${M.month}_${S.role === 'Manager' ? 'MyTeam' : 'All'}.xlsx`);
+};
+$('#ulTeam').onclick = () => $('#tfile').click();
+$('#tfile').onchange = async () => {
+  const f = $('#tfile').files[0]; if (!f) return; $('#tfile').value = '';
+  const wb = XLSX.read(await f.arrayBuffer());
+  const aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' });
+  const h = aoa[0].map(x => String(x).trim().toLowerCase()), iE = h.indexOf('employee id'), iK = h.indexOf('kpi'), iA = h.indexOf('actual');
+  if (iE < 0 || iK < 0 || iA < 0) return uiAlert('Use the downloaded team sheet (columns Employee ID, KPI, Actual).');
+  const by = {}; aoa.slice(1).forEach(r => { if (!r[iE] || r[iA] === '') return; (by[r[iE]] = by[r[iE]] || {})[String(r[iK]).trim()] = r[iA]; });
+  const items = Object.entries(by).map(([EmpId, actuals]) => ({ EmpId, actuals }));
+  if (!items.length) return uiAlert('No actual values found in the file.');
+  if (!await uiConfirm(`Save figures for ${items.length} employees as draft?`)) return;
+  try { const r = await api('saveKpiEntries', { month: M.month, submit: false, items }); uiAlert(r.message + (r.errors.length ? '\n\n' + r.errors.join('\n') : '')); await loadMonth(); } catch (e) { uiAlert(e.message); }
+};
+
+// Approval
+function drawApprove() {
+  if (!isHR) return;
+  $('#apMonth').textContent = M.month;
+  const sub = M.employees.filter(e => statusOf(e.EmpId) === 'Submitted');
+  const appr = M.employees.filter(e => statusOf(e.EmpId) === 'Approved').length;
+  $('#apInfo').innerHTML = `Waiting: <b>${sub.length}</b> · Approved: <b>${appr}</b> of ${M.employees.length}` + (locked() ? ' · <span class="pill no">Locked</span>' : '');
+  $('#apRows').innerHTML = sub.map(e => { const sm = sumOf(e.EmpId);
+    return `<tr><td><input type="checkbox" class="apc" value="${esc(e.EmpId)}" style="width:auto"></td><td class="click" data-id="${esc(e.EmpId)}"><b>${esc(e.FullName)}</b></td><td>${esc(pName(e.PositionCode))}</td><td>${esc(e.StoreCode)}</td><td>${esc(eName(e.ReportingManagerId))}</td><td>${sm.TotalScore === '' ? '<span class="under">HR fields empty</span>' : esc(sm.TotalScore)}</td><td>${esc(sm.Band)}</td><td>${esc(sm.ManagerRemarks)}</td></tr>`; }).join('')
+    || '<tr><td colspan="8" style="color:var(--muted)">Nothing waiting for approval.</td></tr>';
+  document.querySelectorAll('#apRows td.click').forEach(td => td.onclick = () => openEntry(td.dataset.id));
+  $('#apAll').checked = false;
+  const lk = locked();
+  $('#lockBtn').textContent = lk ? 'Unlock month' : 'Lock month';
+  $('#lockBtn').classList.toggle('hidden', lk && !isAdmin);
+  $('#okSel').disabled = $('#retSel').disabled = lk;
+}
+$('#apAll').onchange = () => document.querySelectorAll('.apc').forEach(c => c.checked = $('#apAll').checked);
+const picked = () => [...document.querySelectorAll('.apc:checked')].map(c => c.value);
+$('#okSel').onclick = async () => { const ids = picked(); if (!ids.length) return uiAlert('Tick employees first.');
+  try { const r = await api('approveKpi', { month: M.month, decision: 'approve', empIds: ids }); showMsg($('#m-ap'), r.message + (r.errors.length ? ' — ' + r.errors.join('; ') : ''), !r.errors.length); await loadMonth(); } catch (e) { showMsg($('#m-ap'), e.message); } };
+$('#retSel').onclick = async () => { const ids = picked(); if (!ids.length) return uiAlert('Tick employees first.');
+  const remarks = await uiPrompt('Reason for returning (the manager will see this):', { required: true, okText: 'Return' }); if (remarks === null) return;
+  try { const r = await api('approveKpi', { month: M.month, decision: 'return', empIds: ids, remarks }); showMsg($('#m-ap'), r.message, true); await loadMonth(); } catch (e) { showMsg($('#m-ap'), e.message); } };
+$('#lockBtn').onclick = async () => {
+  const lk = locked(); let reason = '';
+  if (lk) { reason = await uiPrompt('Reason for unlocking ' + M.month + ':', { required: true }); if (!reason) return; }
+  else { const pending = M.employees.length - M.employees.filter(e => statusOf(e.EmpId) === 'Approved').length;
+    if (!await uiConfirm(`Lock ${M.month}?` + (pending ? `\n${pending} employees are not approved yet and will stay unapproved.` : '') + '\nNo one can change figures after locking.')) return; }
+  try { await api('setKpiCycle', { month: M.month, status: lk ? 'Open' : 'Locked', reason }); await loadMonth(); } catch (e) { uiAlert(e.message); }
+};
+
+// ───── Reports ─────
+let R = null;
+(() => { const ym = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1); $('#rTo').value = ym(d); d.setMonth(d.getMonth() - 5); $('#rFrom').value = ym(d); })();
+$('#rGo').onclick = () => loadReport();
+['rStore'].forEach(i => $('#' + i).addEventListener('change', drawReport));
+$('#rEmp').addEventListener('change', () => loadTrend($('#rEmp').value));
+const avg = a => a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length * 10) / 10 : 0;
+const bandColor = b => ({ A: 'bandA', B: 'bandB', C: 'bandC', D: 'bandD' }[b] || '');
+function bars(el, items, max) {
+  max = max || Math.max(1, ...items.map(i => i[1]));
+  $(el).innerHTML = items.map(([l, v, cls, note]) => `<div class="bar"><span title="${esc(l)}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(l)}</span><div class="tr"><div class="fl ${cls || ''}" style="width:${Math.min(100, v / max * 100)}%"></div></div><b>${esc(note ?? v)}</b></div>`).join('') || '<p class="sub">No data.</p>';
+}
+async function loadReport() {
+  try { R = await api('getKpiReport', { from: $('#rFrom').value, to: $('#rTo').value, include: $('#rInc').value }); } catch (e) { return uiAlert(e.message); }
+  const stores = [...new Set(R.employees.map(e => e.StoreCode))].sort(), keep = $('#rStore').value;
+  $('#rStore').innerHTML = '<option value="">All</option>' + stores.map(s => `<option>${esc(s)}</option>`).join(''); $('#rStore').value = keep;
+  drawReport();
+}
+function drawReport() {
+  const st = $('#rStore').value;
+  const ok = new Set(R.employees.filter(e => !st || e.StoreCode === st).map(e => e.EmpId));
+  const rows = R.summaries.filter(s => ok.has(s.EmpId) && s.TotalScore !== '');
+  const months = [...new Set(rows.map(r => r.Month))].sort(), last = months[months.length - 1];
+  const cur = rows.filter(r => r.Month === last);
+  const pN = c => (R.positions.find(p => p.PositionCode === c) || {}).PositionName || c;
+  const emp = id => R.employees.find(e => e.EmpId === id) || {};
+  const bandsSorted = [...R.bands].sort((a, b) => b.MinScore - a.MinScore);
+  const lowest = bandsSorted[bandsSorted.length - 1]?.Band;
+  $('#rTiles').innerHTML = [[last || '—', 'Latest month'], [cur.length, 'Employees scored'], [avg(cur.map(r => +r.TotalScore)), 'Average score'],
+    [cur.filter(r => r.Band === bandsSorted[0]?.Band).length, `In band ${bandsSorted[0]?.Band || ''}`], [cur.filter(r => r.Band === lowest).length, `In band ${lowest || ''}`]]
+    .map(([v, l]) => `<div class="tile"><div class="v">${esc(v)}</div><div class="l">${esc(l)}</div></div>`).join('');
+  $('#rBandSub').textContent = last ? `${last} · ${cur.length} employees` : 'No approved scores in this range';
+  bars('#rBands', bandsSorted.map(b => { const n = cur.filter(r => r.Band === b.Band).length; return [`${b.Band} · ${b.Meaning || ''}`, n, bandColor(b.Band), `${n} (${cur.length ? Math.round(n / cur.length * 100) : 0}%)`]; }), cur.length || 1);
+  const group = key => { const g = {}; cur.forEach(r => { const k = key(r); (g[k] = g[k] || []).push(+r.TotalScore); }); return Object.entries(g).map(([k, v]) => [k, avg(v), '', `${avg(v)} · ${v.length}`]).sort((a, b) => b[1] - a[1]); };
+  bars('#rStores', group(r => r.StoreCode), 120);
+  bars('#rPos', group(r => pN(emp(r.EmpId).PositionCode)), 120);
+  $('#rTop').innerHTML = [...cur].sort((a, b) => b.TotalScore - a.TotalScore).slice(0, 10).map((r, i) => `<tr><td>${i + 1}</td><td><b>${esc(emp(r.EmpId).FullName)}</b></td><td>${esc(pN(emp(r.EmpId).PositionCode))}</td><td>${esc(r.StoreCode)}</td><td>${esc(r.TotalScore)}</td><td><span class="pill">${esc(r.Band)}</span></td></tr>`).join('') || '<tr><td class="sub">No data</td></tr>';
+  const low = {}; rows.filter(r => r.Band === lowest).forEach(r => (low[r.EmpId] = low[r.EmpId] || []).push(r.Month));
+  $('#rWatch').innerHTML = Object.entries(low).filter(([, m]) => m.length >= 2).map(([id, m]) => `<tr><td><b>${esc(emp(id).FullName)}</b></td><td>${esc(pN(emp(id).PositionCode))}</td><td>${esc(emp(id).StoreCode)}</td><td class="under">${m.length} months (${m.sort().join(', ')})</td></tr>`).join('') || '<tr><td class="sub">No one is in the lowest band repeatedly.</td></tr>';
+  const opts = R.employees.filter(e => ok.has(e.EmpId)).sort((a, b) => a.FullName.localeCompare(b.FullName));
+  const kept = $('#rEmp').value;
+  $('#rEmp').innerHTML = '<option value="">— Choose —</option>' + opts.map(e => `<option value="${esc(e.EmpId)}">${esc(e.FullName)} · ${esc(pN(e.PositionCode))}</option>`).join('');
+  $('#rEmp').value = kept; if (!kept) $('#rTrend').innerHTML = '';
+}
+async function loadTrend(id) {
+  if (!id) return $('#rTrend').innerHTML = '';
+  let T; try { T = await api('getKpiReport', { from: $('#rFrom').value, to: $('#rTo').value, include: $('#rInc').value, empId: id }); } catch (e) { return uiAlert(e.message); }
+  const sm = T.summaries.filter(s => s.EmpId === id && s.TotalScore !== '').sort((a, b) => a.Month < b.Month ? -1 : 1);
+  if (!sm.length) return $('#rTrend').innerHTML = '<p class="sub">No scores in this range.</p>';
+  const W = 640, H = 200, P = 32, max = Math.max(120, ...sm.map(s => +s.TotalScore));
+  const x = i => P + (sm.length === 1 ? (W - 2 * P) / 2 : i * (W - 2 * P) / (sm.length - 1)), y = v => H - P - v / max * (H - 2 * P);
+  const pts = sm.map((s, i) => `${x(i)},${y(+s.TotalScore)}`).join(' ');
+  const grid = [0, 60, 75, 90].map(v => `<line x1="${P}" x2="${W - P}" y1="${y(v)}" y2="${y(v)}" stroke="#e7e3d8"/><text x="4" y="${y(v) + 4}" font-size="10" fill="#646767">${v}</text>`).join('');
+  const svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px">${grid}<polyline points="${pts}" fill="none" stroke="#f2ac3c" stroke-width="2.5"/>${sm.map((s, i) => `<circle cx="${x(i)}" cy="${y(+s.TotalScore)}" r="4" fill="#2f5597"/><text x="${x(i)}" y="${y(+s.TotalScore) - 9}" font-size="11" text-anchor="middle" fill="#1c2230">${s.TotalScore} ${s.Band}</text><text x="${x(i)}" y="${H - 10}" font-size="10" text-anchor="middle" fill="#646767">${s.Month}</text>`).join('')}</svg>`;
+  const last = sm[sm.length - 1].Month;
+  const det = T.entries.filter(e => e.Month === last);
+  $('#rTrend').innerHTML = svg + `<h3 style="font-size:14px;margin:12px 0 6px">KPI detail — ${esc(last)}</h3><div class="tbl-wrap"><table><thead><tr><th>KPI</th><th>Target</th><th>Actual</th><th>Achievement</th><th>Weight</th><th>Score</th></tr></thead><tbody>${det.map(e => `<tr><td>${esc(e.KpiName)}</td><td>${esc(e.Target)}</td><td>${esc(e.Actual)}</td><td>${esc(e.AchievementPct)}%</td><td>${esc(e.WeightPct)}%</td><td>${esc(e.Score)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+$('#rExport').onclick = () => {
+  if (!R) return;
+  const pN = c => (R.positions.find(p => p.PositionCode === c) || {}).PositionName || c;
+  const rows = [['Month', 'Employee ID', 'Name', 'Position', 'Store', 'Score', 'Band', 'Status', 'Approved by', 'Remarks']];
+  R.summaries.forEach(s => { const e = R.employees.find(x => x.EmpId === s.EmpId) || {}; rows.push([s.Month, s.EmpId, e.FullName, pN(e.PositionCode), s.StoreCode, s.TotalScore, s.Band, s.Status, s.ApprovedBy, s.ManagerRemarks]); });
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'KPI Summary');
+  XLSX.writeFile(wb, `KPI_Summary_${R.from}_to_${R.to}.xlsx`);
+};
+
+if (S) load().catch(e => uiAlert(e.message));
+</script></body></html>
